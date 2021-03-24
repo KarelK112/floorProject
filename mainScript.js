@@ -1,4 +1,4 @@
-//TODO nastavitelná historie - mazání metodou na Array
+//TODO nastavitelná historie - input od uživatele
 
 /* client */ 
 
@@ -12,36 +12,52 @@ socket.on("connect", function() {
     console.log("You are connected.");
 })
 
+/* slider */
+var slider = document.getElementById("memoryLimitSlider");
+var output = document.getElementById("memoryLimitValue");
+output.innerHTML = 5;
+// track memory limit - must by multiply by 2 because of data structure
+var memoryLimit = (5 * 2) + 2;
+
+slider.oninput = function() {
+    memoryLimit = (this.value * 2) + 2;
+    output.innerHTML = this.value;
+}
+
 /* floor plan */
 
 // canvas
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
-const limit = 10;
+
 // transformation matrix
 ctx.transform(1, 0, 0, -1, 10, canvas.height);
 // drawing width
 ctx.lineWidth = 2.5;
 
-var path = [[0, 0], [0, 700], [200, 700], [200, 720], [-5, 720], [-5, 1120], 
+var roomCornersCoords = [[0, 0], [0, 700], [200, 700], [200, 720], [-5, 720], [-5, 1120], 
             [450, 1120], [450, 870], [295, 870], [295, 700], [705, 700], [705, 770], 
             [960, 770], [960, 970], [1160, 970], [1160, 620], [700, 620], [700, 0], [0, 0]];
 
+drawFloorPlan(roomCornersCoords);            
 drawTrack();
 
 /* functions */ 
 
 function drawTrack() {
+    // multidimensional array for received data 
     var records = [[]];
     var init = true;
+    // count of tracked humans
     var human = 1;
 
+    // step event handling
     socket.on("step", function(axisX, axisY) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         var x = axisX * 100;
         var y = axisY * 100; 
         console.log(x, y);
-        drawLines(path);
+        drawFloorPlan(roomCornersCoords);
     
         if (init) {
             records[0].unshift(x, y);
@@ -55,7 +71,6 @@ function drawTrack() {
                 drawCircleObject(records[row][0], records[row][1]);
                 console.log(records[row]);
                 if (records[row].length >= 4) {
-                    debugger;
                     for (let collum = 0; collum < records[row].length - 3; collum += 2) {
                         drawLine(records[row][collum], records[row][collum + 1], 
                             records[row][collum + 2], records[row][collum + 3]);
@@ -82,8 +97,8 @@ function drawTrack() {
     }
 
     for (let row = 0; row < records.length; row++) {
-        if (records[row].length > limit) {
-            records[row].splice(limit, limit + 1);
+        if (records[row].length > memoryLimit) {
+            records[row].splice(memoryLimit, records[row].length);
         }
     }
         console.log(records);
@@ -99,7 +114,7 @@ function drawLine(x0, y0, x, y) {
     ctx.stroke();
 }
 
-function drawLines(coordinatesArray) {
+function drawFloorPlan(coordinatesArray) {
     for (let index = 0; index < coordinatesArray.length - 1; index++) {
         drawLine(coordinatesArray[index][0], coordinatesArray[index][1], 
             coordinatesArray[index + 1][0], coordinatesArray[index + 1][1]);
@@ -115,15 +130,15 @@ function drawCircleObject(x, y) {
 
 // Pythagorean theorem
 function euclideanDistance(x1, y1, x2, y2) {
-    let a = x1 - x2;
-    let b = y1 - y2;
+    var a = x1 - x2;
+    var b = y1 - y2;
     return Math.sqrt(a * a + b * b);
 }
 
 function indexOfSmallest(array) {
     var lowest = 0;
-    for (let i = 1; i < array.length; i++) {
-        if (array[i] < array[lowest]) lowest = i;
+    for (let index = 1; index < array.length; index++) {
+        if (array[index] < array[lowest]) lowest = index;
     }
     return lowest;
 }
